@@ -5,20 +5,38 @@ from azureml.api.schema.sampleDefinition import SampleDefinition
 from azureml.api.realtime.services import generate_schema
 from azureml.assets import get_local_path
 
+# Import frameworks
+import pandas as pd
+import xgboost
+import arcgis
+
+import numpy as np
+import pickle
+import json
+
 # Prepare the web service definition by authoring
 # init() and run() functions. Test the functions
 # before deploying the web service.
 
 model = None
+wrangler = None
 
 def init():
-    # Get the path to the model asset
-    # local_path = get_local_path('mymodel.model.link')
-    
-    # Load model using appropriate library and function
-    global model
-    # model = model_load_function(local_path)
-    model = 42
+    """
+    Initializes the model and any supporting data required.
+    * Credentials
+    * Road Static Features
+    * Data Transfomations
+    * XGBoost Model File
+    :return: None
+    """
+    global model, wrangler
+
+
+    # Load model.
+    with open('wrangler.pkl', 'rb') as fp:
+        wrangler = pickle.load(fp)
+    model = xgboost.Booster(model_file='0001.xgbmodel')
 
 def run(input_df):
     import json
@@ -32,8 +50,8 @@ def run(input_df):
 def generate_api_schema():
     import os
     print("create schema")
-    sample_input = "sample data text"
-    inputs = {"input_df": SampleDefinition(DataTypes.STANDARD, sample_input)}
+    df = pd.read_csv("sample.csv")
+    inputs = {"input_df": SampleDefinition(DataTypes.PANDAS, df)}
     os.makedirs('outputs', exist_ok=True)
     print(generate_schema(inputs=inputs, filepath="outputs/schema.json", run_func=run))
 
